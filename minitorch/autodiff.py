@@ -1,10 +1,7 @@
 from dataclasses import dataclass
-from typing import Any, Iterable, List, Tuple
+from typing import Any, Iterable, Tuple
 
 from typing_extensions import Protocol
-
-# ## Task 1.1
-# Central Difference calculation
 
 
 def central_difference(f: Any, *vals: Any, arg: int = 0, epsilon: float = 1e-6) -> Any:
@@ -22,7 +19,9 @@ def central_difference(f: Any, *vals: Any, arg: int = 0, epsilon: float = 1e-6) 
     Returns:
         An approximation of $f'_i(x_0, \ldots, x_{n-1})$
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+    new_vals1 = [val + epsilon if i == arg else val for i, val in enumerate(vals)]
+    new_vals2 = [val - epsilon if i == arg else val for i, val in enumerate(vals)]
+    return (f(*new_vals1) - f(*new_vals2)) / (2 * epsilon)
 
 
 variable_count = 1
@@ -60,7 +59,22 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     Returns:
         Non-constant Variables in topological order starting from the right.
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+    sorted_list = []
+    visited_vars = set()
+
+    def sort_variables(variable: Variable) -> None:
+        if variable.unique_id in visited_vars:
+            return None
+        visited_vars.add(variable.unique_id)
+
+        parents = variable.parents
+        for parent in parents:
+            if parent.is_constant() is False:
+                sort_variables(parent)
+        sorted_list.append(variable)
+
+    sort_variables(variable)
+    return sorted_list[::-1]
 
 
 def backpropagate(variable: Variable, deriv: Any) -> None:
@@ -74,7 +88,21 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
 
     No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
     """
-    raise NotImplementedError("Need to include this file from past assignment.")
+    sorted_vars = topological_sort(variable)
+    derivatives = {variable.unique_id: deriv}
+    # print('WOOOOOW' * 10)
+    for var in sorted_vars:
+        if var.unique_id not in derivatives:
+            derivatives[var.unique_id] = 0
+        deriv = derivatives[var.unique_id]
+        # print(f'---> {var}, {deriv}')
+        if var.is_leaf():
+            var.accumulate_derivative(deriv)
+        else:
+            for parent_var, grad in var.chain_rule(deriv):
+                if parent_var.unique_id not in derivatives:
+                    derivatives[parent_var.unique_id] = 0
+                derivatives[parent_var.unique_id] += grad
 
 
 @dataclass
